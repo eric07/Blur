@@ -150,7 +150,7 @@ void collector(chanend c_outIO, chanend w0, chanend w1, chanend w2, chanend w3, 
 	int pause;
 	processedPixel pixel;
 
-	while(totalNo > 0) 
+	while(totalNo > 0)
 	{
 		select {
 			case w0 :> pixel: {
@@ -195,7 +195,7 @@ void collector(chanend c_outIO, chanend w0, chanend w1, chanend w2, chanend w3, 
 					endthread[3] <: 2;
 
 					totalNo = 0;
-					
+
 				}
 				break;
 			}
@@ -204,7 +204,7 @@ void collector(chanend c_outIO, chanend w0, chanend w1, chanend w2, chanend w3, 
 		}
 		visualiser <: 12*(total-totalNo) / total;
 	}
-		
+
 	if (pause != 2)
 	{
 		for(int i=0; i< IMHT; i++)
@@ -232,8 +232,8 @@ void distributor(chanend c_in, chanend w1, chanend w2, chanend w3, chanend w4)
 
 	//printf( "ProcessImage:Start, size = %dx%d\n", IMHT, IMWD );
 		cledR <: 1;
-		
-	
+
+
 	//This code is to be replaced – it is a place holder for farming out the work...
 	for( int y = 0; y < IMHT; y++ )
 	{
@@ -245,7 +245,7 @@ void distributor(chanend c_in, chanend w1, chanend w2, chanend w3, chanend w4)
 			//c_out <: (uchar)( val ^ 0xFF ); //Need to cast
 		 }
 	}
-	
+
 
 	//assignStruct
 	worker1.x = 1;
@@ -298,7 +298,7 @@ void worker1(chanend cin, chanend cout, chanend endthread)
 	for(int i=1; i < IMHT/2; ++i )
 		for(int j=1; j < IMWD/2; ++j)
 		{
-			select 
+			select
 			{
 				case endthread :> end:
 				{
@@ -330,7 +330,7 @@ void worker1(chanend cin, chanend cout, chanend endthread)
 		printf("Worker1:Done...\n");
 }
 
-void worker2(chanend cin, chanend cout, chanend endthread) 
+void worker2(chanend cin, chanend cout, chanend endthread)
 {
 	partToProcess w2;
 	processedPixel pixel;
@@ -340,7 +340,7 @@ void worker2(chanend cin, chanend cout, chanend endthread)
 	for(int i=1; i < IMHT/2; ++i )
 		for(int j=1; j < IMWD/2; ++j)
 		{
-			select 
+			select
 			{
 				case endthread :> end:
 				{
@@ -372,7 +372,7 @@ void worker2(chanend cin, chanend cout, chanend endthread)
 	printf("Worker2:Done...\n");
 }
 
-void worker3(chanend cin, chanend cout, chanend endthread) 
+void worker3(chanend cin, chanend cout, chanend endthread)
 {
 	partToProcess w3;
 	processedPixel pixel;
@@ -382,7 +382,7 @@ void worker3(chanend cin, chanend cout, chanend endthread)
 	for(int i=1; i < IMHT/2; ++i )
 		for(int j=1; j < IMWD/2; ++j)
 		{
-			select 
+			select
 			{
 				case endthread :> end:
 				{
@@ -412,9 +412,9 @@ void worker3(chanend cin, chanend cout, chanend endthread)
 			}
 		}
 	printf("Worker3:Done...\n");
-}	
+}
 
-void worker4(chanend cin, chanend cout, chanend endthread) 
+void worker4(chanend cin, chanend cout, chanend endthread)
 {
 	partToProcess w4;
 	processedPixel pixel;
@@ -424,7 +424,7 @@ void worker4(chanend cin, chanend cout, chanend endthread)
 	for(int i=1; i < IMHT/2; ++i )
 		for(int j=1; j < IMWD/2; ++j)
 		{
-			select 
+			select
 			{
 				case endthread :> end:
 				{
@@ -453,7 +453,7 @@ void worker4(chanend cin, chanend cout, chanend endthread)
 				}
 			}
 		}
-	printf("Worker4:Done...\n");		
+	printf("Worker4:Done...\n");
 }
 
 //READ BUTTONS and send commands to Visualiser
@@ -465,43 +465,49 @@ void buttonListener(in port buttons, chanend toDataIn, chanend toCollector, chan
      unsigned int running = 1; //helper variable to determine system shutdown
      while (running == 1)
      {
-     	select {
-     		case fromDataOut :> running: {
-     			break;
-     		}
-     		default: break;
-     	}
-         buttons when pinsneq(15) :> buttonInput;
-         printf ("Buttons = %d\n", buttonInput);
-         buttons when pinseq(15) :> void;
-         waitMoment(8000000);
-     	 if (buttonInput == 14 && firstTime == 0)
-     	 {
-             toDataIn <: 1; //start the processing
-             firstTime = 1;
-         }
-
-         if (buttonInput == 13 && firstTime == 1)
-         {
-			toCollector <:1; //Signal to increase no of particles
-			first = 1;
-			while(first == 1)
-			{
-				buttons when pinsneq(15) :> buttonInput;
-		        buttons when pinseq(15) :> void;
-		        if(buttonInput == 13)
-		        {
-		        	first = 0;
-		        	toCollector <: 1;
-		        	break;
-		        }
-			}
-     	 }
-     	 if (buttonInput == 11 && firstTime == 1)
+    	 select
 		{
-			toCollector <:2; //Signal to gracefully shut donw
-			running = 0;
-			break;
+			case fromDataOut :> running:
+			{
+				running = 0 ;
+				break;
+			}
+			case buttons when pinsneq(15) :> buttonInput :
+			{
+				 buttons when pinseq(15) :> void;
+				 waitMoment(8000000);
+				 if (buttonInput == 14 && firstTime == 0)
+				 {
+					 toDataIn <: 1; //start the processing
+					 firstTime = 1;
+					 break;
+				 }
+
+				 if (buttonInput == 13 && firstTime == 1)
+				 {
+					toCollector <:1; //Signal pause
+					first = 1;
+					while(first == 1)
+					{
+						buttons when pinsneq(15) :> buttonInput;
+						buttons when pinseq(15) :> void;
+						if(buttonInput == 13)
+						{
+							first = 0;
+							toCollector <: 1;
+							break;
+						}
+						break;
+					}
+				 }
+
+				 if (buttonInput == 11 && firstTime == 1)
+				 {
+					toCollector <:2; //Signal to gracefully shut donw
+					running = 0;
+				 }
+				 break;
+			}
 		}
      }
 
@@ -521,7 +527,7 @@ void DataOutStream(char outfname[], chanend c_in, chanend toButtons)
 	float time1, time2;
 	int res;
 	uchar line[ IMWD ];
-	tmr :> time1; 
+	tmr :> time1;
 	printf( "DataOutStream:Start...\n" );
 
 	 res = _openoutpgm( outfname, IMWD, IMHT );
@@ -564,7 +570,7 @@ int main()
 
  par //extend/change this par statement to implement your concurrent filter
  {
- 	
+
 	 on stdcore[0]: DataInStream( "D:\\test0.pgm", c_inIO, buttonToDataIn);
 	 on stdcore[0]: distributor( c_inIO, wIN[0], wIN[1], wIN[2], wIN[3]);
 	 on stdcore[2]:  worker1(wIN[0], wOUT[0], endthread[0]);
